@@ -1,0 +1,44 @@
+stages: [test, image, chart]
+
+variables:
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  NUGET_PACKAGES: $CI_PROJECT_DIR/.nuget
+
+test:
+  stage: test
+  image: mcr.microsoft.com/dotnet/sdk:10.0
+  services:
+    - { name: "postgres:17-alpine", alias: postgres }
+    - { name: "redis:7-alpine", alias: redis }
+  variables:
+    POSTGRES_USER: ledger
+    POSTGRES_PASSWORD: ledger
+    LEDGER_TEST_PG: Host=postgres;Username=ledger;Password=ledger;Database=postgres
+    LEDGER_TEST_REDIS: redis:6379
+  cache: { key: { files: [Directory.Packages.props] }, paths: [.nuget] }
+  script:
+    - dotnet build -c Release
+    - dotnet test -c Release --no-build --logger trx --results-directory TestResults
+  artifacts: { when: always, paths: [TestResults] }
+
+image:
+  stage: image
+  image: docker:27
+  services: ["docker:27-dind"]
+  rules: [{ if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH" }]
+  parallel:
+    matrix:
+      - { PROJECT: RefundLedger.Api, NAME: refund-ledger-api }
+      - { PROJECT: RefundLedger.Worker, NAME: refund-ledger-worker }
+      - { PROJECT: RefundLedger.PspStub, NAME: refund-ledger-pspstub }
+  script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+    - docker build --build-arg PROJECT=$PROJECT -t $CI_REGISTRY_IMAGE/$NAME:$CI_COMMIT_SHORT_SHA .
+    - docker push $CI_REGISTRY_IMAGE/$NAME:$CI_COMMIT_SHORT_SHA
+
+chart:
+  stage: chart
+  image: { name: "alpine/helm:3.17.0", entrypoint: [""] }
+  script:
+    - helm lint deploy/helm/refund-ledger
+    - helm template deploy/helm/refund-ledger > /dev/null

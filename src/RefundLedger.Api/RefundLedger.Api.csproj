@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <ItemGroup>
+    <ProjectReference Include="../RefundLedger.Infrastructure/RefundLedger.Infrastructure.csproj" />
+    <PackageReference Include="Grpc.AspNetCore" />
+    <PackageReference Include="Grpc.AspNetCore.HealthChecks" />
+    <Protobuf Include="../../proto/ledger/v1/ledger.proto" ProtoRoot="../../proto" GrpcServices="Server" />
+    <InternalsVisibleTo Include="RefundLedger.IntegrationTests" />
+  </ItemGroup>
+</Project>

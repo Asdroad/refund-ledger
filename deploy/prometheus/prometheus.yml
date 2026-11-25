@@ -1,0 +1,5 @@
+global: { evaluation_interval: 15s }
+rule_files: [/etc/prometheus/alerts.yml]
+# Метрики приходят по OTLP, поэтому scrape_configs здесь нет.
+storage:
+  tsdb: { out_of_order_time_window: 10m }

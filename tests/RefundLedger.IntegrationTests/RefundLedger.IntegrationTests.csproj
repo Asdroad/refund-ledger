@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><IsPackable>false</IsPackable></PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Grpc.Net.Client" />
+    <PackageReference Include="Google.Protobuf" />
+    <PackageReference Include="Grpc.Tools" PrivateAssets="all" />
+    <Protobuf Include="../../proto/ledger/v1/ledger.proto" ProtoRoot="../../proto" GrpcServices="Client" />
+    <Using Include="Xunit" />
+    <ProjectReference Include="../../src/RefundLedger.Api/RefundLedger.Api.csproj" Aliases="api" />
+    <ProjectReference Include="../../src/RefundLedger.PspStub/RefundLedger.PspStub.csproj" Aliases="psp" />
+    <ProjectReference Include="../../src/RefundLedger.Infrastructure/RefundLedger.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>

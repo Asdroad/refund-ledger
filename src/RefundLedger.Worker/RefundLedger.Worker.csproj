@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <ItemGroup>
+    <ProjectReference Include="../RefundLedger.Infrastructure/RefundLedger.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>

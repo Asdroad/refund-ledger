@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../RefundLedger.Domain/RefundLedger.Domain.csproj" />
+  </ItemGroup>
+</Project>

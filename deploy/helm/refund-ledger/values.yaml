@@ -1,0 +1,11 @@
+image: { registry: "", tag: latest, pullPolicy: IfNotPresent }
+replicas: { api: 2, worker: 2 }
+# Секрет создаётся заранее, в нём ключи postgres и redis со строками подключения.
+connectionSecret: refund-ledger-connections
+kafka: { bootstrapServers: "kafka:9092" }
+psp: { baseUrl: "http://psp-stub:5080" }
+otlp: { traces: "", metrics: "" }
+pspStub: { enabled: true }
+resources:
+  requests: { cpu: 100m, memory: 160Mi }
+  limits: { memory: 384Mi }

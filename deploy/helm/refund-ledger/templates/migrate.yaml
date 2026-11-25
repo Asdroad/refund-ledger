@@ -1,0 +1,20 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: refund-ledger-migrate
+  annotations:
+    # До выкатки новых подов: код не должен встретить старую схему.
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: {{ include "ledger.image" (dict "root" . "name" "refund-ledger-worker") }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args: ["--migrate"]
+          env: {{- include "ledger.env" . | nindent 12 }}
+          securityContext: {{- include "ledger.security" . | nindent 12 }}

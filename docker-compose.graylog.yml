@@ -1,0 +1,32 @@
+# Логи в Graylog. Требует ещё ~3 ГБ памяти, поэтому вынесено отдельно:
+#   docker compose -f docker-compose.yml -f docker-compose.graylog.yml up -d
+# После старта создайте в интерфейсе вход GELF UDP на порту 12201.
+x-gelf: &gelf
+  driver: gelf
+  options: { gelf-address: "udp://localhost:12201", tag: "{{.Name}}" }
+
+services:
+  api: { logging: *gelf }
+  worker: { logging: *gelf }
+
+  mongo:
+    image: mongo:7
+
+  opensearch:
+    image: opensearchproject/opensearch:2.19.1
+    environment:
+      discovery.type: single-node
+      DISABLE_SECURITY_PLUGIN: "true"
+      OPENSEARCH_JAVA_OPTS: -Xms512m -Xmx512m
+
+  graylog:
+    image: graylog/graylog:6.1
+    environment:
+      # Только для локального стенда. Пароль задайте сами: echo -n пароль | shasum -a 256
+      GRAYLOG_PASSWORD_SECRET: ${GRAYLOG_PASSWORD_SECRET:?задайте строку длиннее 16 символов}
+      GRAYLOG_ROOT_PASSWORD_SHA2: ${GRAYLOG_ROOT_PASSWORD_SHA2:?задайте sha256 пароля}
+      GRAYLOG_HTTP_EXTERNAL_URI: http://localhost:9000/
+      GRAYLOG_ELASTICSEARCH_HOSTS: http://opensearch:9200
+      GRAYLOG_MONGODB_URI: mongodb://mongo:27017/graylog
+    depends_on: [mongo, opensearch]
+    ports: ["127.0.0.1:9000:9000", "127.0.0.1:12201:12201/udp"]

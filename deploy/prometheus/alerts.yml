@@ -1,0 +1,25 @@
+groups:
+  - name: ledger
+    rules:
+      - alert: LedgerImbalance
+        expr: max(ledger_imbalance_minor) != 0 or max(ledger_drifted_accounts) > 0
+        labels: { severity: critical }
+        annotations: { summary: "Леджер не сходится: остановить выплаты и разбираться" }
+      - alert: PayoutUnknownTooLong
+        expr: max(ledger_oldest_unknown_seconds) > 900
+        labels: { severity: warning }
+        annotations: { summary: "Итог выплаты неизвестен дольше 15 минут" }
+      - alert: OutboxLag
+        expr: max(ledger_outbox_age_seconds) > 60
+        for: 2m
+        labels: { severity: warning }
+        annotations: { summary: "События не уходят в Kafka" }
+      - alert: ReconciliationIssues
+        expr: max(ledger_reconciliation_issues) > 0
+        labels: { severity: critical }
+        annotations: { summary: "Расхождение с реестром провайдера" }
+      - alert: DeltaBacklog
+        expr: max(ledger_balance_deltas) > 500000
+        for: 5m
+        labels: { severity: warning }
+        annotations: { summary: "Свёртка остатков не успевает" }

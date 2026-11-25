@@ -1,0 +1,69 @@
+{{- $root := . }}
+{{- range $name, $port := dict "api" 8081 "worker" 8082 }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: refund-ledger-{{ $name }}
+  labels: { app: refund-ledger-{{ $name }} }
+spec:
+  replicas: {{ index $root.Values.replicas $name }}
+  selector: { matchLabels: { app: refund-ledger-{{ $name }} } }
+  template:
+    metadata: { labels: { app: refund-ledger-{{ $name }} } }
+    spec:
+      terminationGracePeriodSeconds: 40
+      containers:
+        - name: {{ $name }}
+          image: {{ include "ledger.image" (dict "root" $root "name" (printf "refund-ledger-%s" $name)) }}
+          imagePullPolicy: {{ $root.Values.image.pullPolicy }}
+          env: {{- include "ledger.env" $root | nindent 12 }}
+          ports:
+            - { name: health, containerPort: {{ $port }} }
+            {{- if eq $name "api" }}
+            - { name: grpc, containerPort: 5001 }
+            {{- end }}
+          livenessProbe: { httpGet: { path: /health/live, port: health }, periodSeconds: 10 }
+          readinessProbe: { httpGet: { path: /health/ready, port: health }, periodSeconds: 5 }
+          resources: {{- toYaml $root.Values.resources | nindent 12 }}
+          securityContext: {{- include "ledger.security" $root | nindent 12 }}
+{{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata: { name: refund-ledger-api }
+spec:
+  # Headless: gRPC держит одно соединение, и балансировать должен клиент.
+  clusterIP: None
+  selector: { app: refund-ledger-api }
+  ports: [{ name: grpc, port: 5001, targetPort: grpc }]
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata: { name: refund-ledger-api }
+spec:
+  minAvailable: 1
+  selector: { matchLabels: { app: refund-ledger-api } }
+{{- if .Values.pspStub.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: psp-stub }
+spec:
+  selector: { matchLabels: { app: psp-stub } }
+  template:
+    metadata: { labels: { app: psp-stub } }
+    spec:
+      containers:
+        - name: psp
+          image: {{ include "ledger.image" (dict "root" . "name" "refund-ledger-pspstub") }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports: [{ containerPort: 5080 }]
+---
+apiVersion: v1
+kind: Service
+metadata: { name: psp-stub }
+spec:
+  selector: { app: psp-stub }
+  ports: [{ port: 5080 }]
+{{- end }}
